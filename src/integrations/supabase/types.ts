@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      products: {
+        Row: {
+          active: boolean
+          category: string
+          cost_price: number | null
+          created_at: string
+          description: string | null
+          id: string
+          min_stock: number | null
+          name: string
+          price: number
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          cost_price?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          min_stock?: number | null
+          name: string
+          price: number
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          cost_price?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          min_stock?: number | null
+          name?: string
+          price?: number
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["transaction_category"]
+          created_at: string
+          description: string
+          id: string
+          notes: string | null
+          payment_method: string | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string
+          description: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +103,21 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      transaction_category:
+        | "mensalidade"
+        | "pdv"
+        | "despesa"
+        | "suplemento"
+        | "vestuario"
+        | "acessorio"
+        | "manutencao"
+        | "salario"
+        | "aluguel"
+        | "energia"
+        | "agua"
+        | "outro"
+      transaction_status: "completed" | "pending" | "cancelled"
+      transaction_type: "entrada" | "saida"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +244,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      transaction_category: [
+        "mensalidade",
+        "pdv",
+        "despesa",
+        "suplemento",
+        "vestuario",
+        "acessorio",
+        "manutencao",
+        "salario",
+        "aluguel",
+        "energia",
+        "agua",
+        "outro",
+      ],
+      transaction_status: ["completed", "pending", "cancelled"],
+      transaction_type: ["entrada", "saida"],
+    },
   },
 } as const
