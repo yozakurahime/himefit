@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 const navItems = [
   { path: "/", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/alunos", icon: Users, label: "Alunos" },
+  { path: "/planos", icon: CreditCard, label: "Planos" },
   { path: "/financeiro", icon: CreditCard, label: "Financeiro" },
   { path: "/whatsapp", icon: MessageSquare, label: "Central IA" },
   { path: "/gamificacao", icon: Trophy, label: "HimeQuest" },

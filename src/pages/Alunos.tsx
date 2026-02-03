@@ -7,13 +7,17 @@ import {
   Mail,
   Phone,
   Calendar,
-  CreditCard,
   Trophy,
   TrendingUp,
+  Users,
+  UserCheck,
+  UserX,
+  Clock,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,123 +33,84 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  avatar: string;
-  modality: string;
-  plan: string;
-  status: "active" | "pending" | "expired";
-  level: number;
-  frequency: number;
-  lastVisit: string;
-  joinDate: string;
-}
-
-const students: Student[] = [
-  {
-    id: "1",
-    name: "Lucas Mendes",
-    email: "lucas@email.com",
-    phone: "(11) 98765-4321",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=lucas",
-    modality: "CrossFit",
-    plan: "Premium",
-    status: "active",
-    level: 45,
-    frequency: 92,
-    lastVisit: "Hoje, 08:30",
-    joinDate: "Jan 2024",
-  },
-  {
-    id: "2",
-    name: "Juliana Ferreira",
-    email: "juliana@email.com",
-    phone: "(11) 91234-5678",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=juliana",
-    modality: "Musculação",
-    plan: "Básico",
-    status: "active",
-    level: 42,
-    frequency: 88,
-    lastVisit: "Ontem, 17:45",
-    joinDate: "Mar 2024",
-  },
-  {
-    id: "3",
-    name: "Rafael Costa",
-    email: "rafael@email.com",
-    phone: "(11) 99876-5432",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=rafael",
-    modality: "Funcional",
-    plan: "Premium",
-    status: "pending",
-    level: 38,
-    frequency: 75,
-    lastVisit: "3 dias atrás",
-    joinDate: "Fev 2024",
-  },
-  {
-    id: "4",
-    name: "Camila Oliveira",
-    email: "camila@email.com",
-    phone: "(11) 98888-7777",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=camila",
-    modality: "Yoga",
-    plan: "Básico",
-    status: "expired",
-    level: 35,
-    frequency: 60,
-    lastVisit: "1 semana atrás",
-    joinDate: "Dez 2023",
-  },
-  {
-    id: "5",
-    name: "Pedro Santos",
-    email: "pedro@email.com",
-    phone: "(11) 97777-6666",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=pedro",
-    modality: "Spinning",
-    plan: "Premium",
-    status: "active",
-    level: 28,
-    frequency: 95,
-    lastVisit: "Hoje, 06:00",
-    joinDate: "Abr 2024",
-  },
-];
+import { useStudents } from "@/hooks/useStudents";
+import { StudentDialog } from "@/components/alunos/StudentDialog";
+import { DeleteStudentDialog } from "@/components/alunos/DeleteStudentDialog";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const statusConfig = {
   active: { label: "Ativo", className: "bg-success/10 text-success border-success/20" },
   pending: { label: "Pendente", className: "bg-warning/10 text-warning border-warning/20" },
-  expired: { label: "Expirado", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  inactive: { label: "Inativo", className: "bg-muted text-muted-foreground border-border" },
+  suspended: { label: "Suspenso", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
 export default function Alunos() {
+  const { students, isLoading, stats, createStudent, updateStudent, deleteStudent } = useStudents();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterModality, setFilterModality] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<typeof students[0] | null>(null);
+  const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
 
   const filteredStudents = students.filter((student) => {
     const matchesSearch =
       student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesModality = filterModality === "all" || student.modality === filterModality;
+      (student.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+    const matchesModality = filterModality === "all" || student.modalities?.includes(filterModality);
     const matchesStatus = filterStatus === "all" || student.status === filterStatus;
     return matchesSearch && matchesModality && matchesStatus;
   });
+
+  const handleCreate = () => {
+    setSelectedStudent(null);
+    setDialogMode("create");
+    setDialogOpen(true);
+  };
+
+  const handleEdit = (student: typeof students[0]) => {
+    setSelectedStudent(student);
+    setDialogMode("edit");
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (student: typeof students[0]) => {
+    setSelectedStudent(student);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSubmit = (data: any) => {
+    if (dialogMode === "create") {
+      createStudent.mutate(data, {
+        onSuccess: () => setDialogOpen(false),
+      });
+    } else if (selectedStudent) {
+      updateStudent.mutate({ ...data, id: selectedStudent.id }, {
+        onSuccess: () => setDialogOpen(false),
+      });
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedStudent) {
+      deleteStudent.mutate(selectedStudent.id, {
+        onSuccess: () => setDeleteDialogOpen(false),
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -157,74 +122,38 @@ export default function Alunos() {
             Gerencie todos os alunos da academia
           </p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-primary hover:opacity-90">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Aluno
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nome Completo</Label>
-                  <Input placeholder="Digite o nome" className="bg-secondary border-border" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" placeholder="email@exemplo.com" className="bg-secondary border-border" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Telefone</Label>
-                  <Input placeholder="(00) 00000-0000" className="bg-secondary border-border" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Modalidade</Label>
-                  <Select>
-                    <SelectTrigger className="bg-secondary border-border">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover border-border">
-                      <SelectItem value="musculacao">Musculação</SelectItem>
-                      <SelectItem value="crossfit">CrossFit</SelectItem>
-                      <SelectItem value="yoga">Yoga</SelectItem>
-                      <SelectItem value="spinning">Spinning</SelectItem>
-                      <SelectItem value="funcional">Funcional</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Plano</Label>
-                  <Select>
-                    <SelectTrigger className="bg-secondary border-border">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover border-border">
-                      <SelectItem value="basico">Básico - R$ 99/mês</SelectItem>
-                      <SelectItem value="premium">Premium - R$ 189/mês</SelectItem>
-                      <SelectItem value="vip">VIP - R$ 299/mês</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Data de Início</Label>
-                  <Input type="date" className="bg-secondary border-border" />
-                </div>
-              </div>
-              <Button className="w-full mt-4 bg-gradient-primary hover:opacity-90">
-                Cadastrar Aluno
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button className="bg-gradient-primary hover:opacity-90" onClick={handleCreate}>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Aluno
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard
+          title="Total de Alunos"
+          value={stats.total.toString()}
+          icon={Users}
+          variant="primary"
+        />
+        <StatCard
+          title="Alunos Ativos"
+          value={stats.active.toString()}
+          icon={UserCheck}
+          variant="success"
+        />
+        <StatCard
+          title="Pendentes"
+          value={stats.pending.toString()}
+          icon={Clock}
+          variant="warning"
+        />
+        <StatCard
+          title="Inativos"
+          value={stats.inactive.toString()}
+          icon={UserX}
+          variant="accent"
+        />
       </div>
 
       {/* Filters */}
@@ -252,6 +181,7 @@ export default function Alunos() {
                 <SelectItem value="Yoga">Yoga</SelectItem>
                 <SelectItem value="Spinning">Spinning</SelectItem>
                 <SelectItem value="Funcional">Funcional</SelectItem>
+                <SelectItem value="Natação">Natação</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -262,7 +192,8 @@ export default function Alunos() {
                 <SelectItem value="all">Todos Status</SelectItem>
                 <SelectItem value="active">Ativo</SelectItem>
                 <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="expired">Expirado</SelectItem>
+                <SelectItem value="inactive">Inativo</SelectItem>
+                <SelectItem value="suspended">Suspenso</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -280,12 +211,14 @@ export default function Alunos() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12 border-2 border-border">
-                    <AvatarImage src={student.avatar} />
+                    <AvatarImage src={student.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`} />
                     <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="font-semibold">{student.name}</h3>
-                    <p className="text-sm text-muted-foreground">{student.modality}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {student.modalities?.join(", ") || "Sem modalidade"}
+                    </p>
                   </div>
                 </div>
                 <DropdownMenu>
@@ -295,26 +228,39 @@ export default function Alunos() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-popover border-border">
-                    <DropdownMenuItem>Ver perfil</DropdownMenuItem>
-                    <DropdownMenuItem>Editar</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleEdit(student)}>
+                      Editar
+                    </DropdownMenuItem>
                     <DropdownMenuItem>Histórico de pagamentos</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">Desativar</DropdownMenuItem>
+                    <DropdownMenuItem>Evolução física</DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => handleDelete(student)}
+                    >
+                      Remover
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground truncate">{student.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{student.phone}</span>
-                </div>
+                {student.email && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground truncate">{student.email}</span>
+                  </div>
+                )}
+                {student.phone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{student.phone}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Último: {student.lastVisit}</span>
+                  <span className="text-muted-foreground">
+                    Desde {format(new Date(student.created_at), "MMM yyyy", { locale: ptBR })}
+                  </span>
                 </div>
               </div>
 
@@ -322,21 +268,11 @@ export default function Alunos() {
                 <Badge className={cn("text-xs", statusConfig[student.status].className)}>
                   {statusConfig[student.status].label}
                 </Badge>
-                <Badge variant="outline" className="text-xs">
-                  {student.plan}
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-                <div className="flex items-center gap-1">
-                  <Trophy className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium">Nv. {student.level}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4 text-success" />
-                  <span className="text-sm font-medium">{student.frequency}% freq.</span>
-                </div>
-                <span className="text-xs text-muted-foreground">Desde {student.joinDate}</span>
+                {student.modalities?.slice(0, 2).map((mod) => (
+                  <Badge key={mod} variant="outline" className="text-xs">
+                    {mod}
+                  </Badge>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -355,6 +291,47 @@ export default function Alunos() {
           </p>
         </div>
       )}
+
+      {/* Dialogs */}
+      <StudentDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSubmit={handleSubmit}
+        defaultValues={selectedStudent ? {
+          name: selectedStudent.name,
+          email: selectedStudent.email || "",
+          phone: selectedStudent.phone || "",
+          cpf: selectedStudent.cpf || "",
+          birth_date: selectedStudent.birth_date || "",
+          gender: selectedStudent.gender || undefined,
+          modalities: selectedStudent.modalities || [],
+          address_street: selectedStudent.address_street || "",
+          address_number: selectedStudent.address_number || "",
+          address_complement: selectedStudent.address_complement || "",
+          address_neighborhood: selectedStudent.address_neighborhood || "",
+          address_city: selectedStudent.address_city || "",
+          address_state: selectedStudent.address_state || "",
+          address_zip: selectedStudent.address_zip || "",
+          emergency_contact_name: selectedStudent.emergency_contact_name || "",
+          emergency_contact_phone: selectedStudent.emergency_contact_phone || "",
+          emergency_contact_relation: selectedStudent.emergency_contact_relation || "",
+          medical_notes: selectedStudent.medical_notes || "",
+          blood_type: selectedStudent.blood_type || "",
+          allergies: selectedStudent.allergies || "",
+          notes: selectedStudent.notes || "",
+          current_plan_id: selectedStudent.current_plan_id || "",
+          plan_start_date: selectedStudent.plan_start_date || "",
+        } : undefined}
+        isLoading={createStudent.isPending || updateStudent.isPending}
+        mode={dialogMode}
+      />
+
+      <DeleteStudentDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        studentName={selectedStudent?.name || ""}
+      />
     </div>
   );
 }
