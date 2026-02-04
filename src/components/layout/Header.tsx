@@ -1,4 +1,4 @@
-import { Bell, Search, Command } from "lucide-react";
+import { Bell, Search, Command, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -10,12 +10,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface HeaderProps {
   onOpenCommandPalette: () => void;
 }
 
 export function Header({ onOpenCommandPalette }: HeaderProps) {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error("Erro ao sair: " + error.message);
+    } else {
+      navigate("/auth");
+    }
+  };
+
+  const userEmail = user?.email || "usuário";
+  const userInitials = userEmail.substring(0, 2).toUpperCase();
+  const avatarSeed = user?.id || "default";
+
   return (
     <header className="sticky top-0 z-30 h-16 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="flex items-center justify-between h-full px-6">
@@ -76,16 +95,16 @@ export function Header({ onOpenCommandPalette }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10 border-2 border-primary/50">
-                  <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=admin" />
-                  <AvatarFallback className="bg-primary text-primary-foreground">AD</AvatarFallback>
+                  <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} />
+                  <AvatarFallback className="bg-primary text-primary-foreground">{userInitials}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-popover border-border">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">Admin HimeFit</p>
-                  <p className="text-xs text-muted-foreground">admin@himefit.com.br</p>
+                  <p className="text-sm font-medium">Staff HimeFit</p>
+                  <p className="text-xs text-muted-foreground">{userEmail}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -93,7 +112,13 @@ export function Header({ onOpenCommandPalette }: HeaderProps) {
               <DropdownMenuItem>Configurações</DropdownMenuItem>
               <DropdownMenuItem>Suporte</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">Sair</DropdownMenuItem>
+              <DropdownMenuItem 
+                className="text-destructive focus:text-destructive cursor-pointer"
+                onClick={handleSignOut}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
